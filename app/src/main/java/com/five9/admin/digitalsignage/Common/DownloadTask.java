@@ -3,6 +3,8 @@ package com.five9.admin.digitalsignage.Common;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.five9.admin.digitalsignage.Object.Schedule;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -27,27 +29,24 @@ public class DownloadTask  extends AsyncTask<Void, Void, Boolean> {
 
     @Override
     protected Boolean doInBackground(Void... voids) {
-        return download(request.pathOnServer, request.pathOnDevice);
+        return download(request.schedule);
     }
 
-    public boolean download(String path, String filePath){
+    public boolean download(Schedule schedule){
         File file = null;
         try {
-            Log.d(TAG, "download: " + path);
-            file = new File(filePath);
+            file = new File(schedule.getPathOnDevice());
             if (file.exists()) {
                 Log.d(TAG, "download: file exists");
-//                file.delete();
-                return true;
+                file.delete();
+//                return true;
             } else {
                 file.getParentFile().mkdirs();
             }
             URL url;
 
-            URLConnection ucon;
-            url = new URL(path);
-
-
+            url = new URL("http://thinkzone.vn/" + schedule.path);
+            Log.d(TAG, "download: " + url);
             Request.Builder builder = new Request.Builder()
                     .url(url);
             OkHttpClient client = new  OkHttpClient.Builder()

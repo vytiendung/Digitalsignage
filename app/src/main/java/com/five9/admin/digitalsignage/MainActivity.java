@@ -1,7 +1,6 @@
 package com.five9.admin.digitalsignage;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -43,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(this, PlayActivity.class));
             finish();
         }
-//        startActivity(new Intent(this, PlayActivity.class));
     }
 
     public boolean hasPermissions(String... permissions) {

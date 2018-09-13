@@ -2,14 +2,17 @@ package com.five9.admin.digitalsignage.Common;
 
 import android.content.Context;
 import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.five9.admin.digitalsignage.MyApplication;
 import com.five9.admin.digitalsignage.Object.ListSchedules;
 import com.five9.admin.digitalsignage.Object.ParseJson;
 import com.five9.admin.digitalsignage.Object.Schedule;
 
 import java.io.File;
+import java.util.ArrayList;
 
 public class ListSchedulesManager {
     private static final String TAG = "ListSchedulesManager";
@@ -17,75 +20,74 @@ public class ListSchedulesManager {
     private static ListSchedulesManager instance;
     private Context context;
     public ListSchedules currentSchedules;
+    private ListSchedules nextSchedules;
     private LoaderController loaderController;
 
     private ParseJson parseJson;
     private ApiConnection apiConnection;
-    private DataStore dataStore;
+    private DataStorage dataStorage;
     private int currentIndex = -1;
     private long TIME_TO_CHECK_RELOAD = 1000 * 60;
-    private ListSchedules nextSchedules;
-    private String currentPath;
+    private String currentPath = "";
     private int timeReload = 0;
 
-    private ListSchedulesManager(Context context) {
-        this.context = context;
+    private ListSchedulesManager() {
+        this.context = MyApplication.getInstance();
         parseJson = new ParseJson();
         apiConnection = new ApiConnection();
-        dataStore = DataStore.getInstance(context);
+        dataStorage = DataStorage.getInstance();
         loaderController = LoaderController.getInstance();
     }
 
-    public static ListSchedulesManager getInstance(Context context){
+    public static ListSchedulesManager getInstance(){
         if (instance == null)
-            instance = new ListSchedulesManager(context);
+            instance = new ListSchedulesManager();
         return instance;
     }
 
     public void initData(){
-        String localData = dataStore.getListSchedules();
-        currentSchedules = parseJson.parseListSchedules(localData);
-        currentSchedules.schedules = null;
-        Log.d(TAG, "initData: " + currentSchedules);
-        if (!TextUtils.isEmpty(currentSchedules.version)){
-            apiConnection.sendSchedulesVersionToServer(currentSchedules.version, new RequestNetworkListener() {
-                @Override
-                public void onSuccess(String response) {
-                    // todo
-                    getListSchedulesFromServer();
-                }
-
-                @Override
-                public void onFail(String response) {
-
-                }
-
-                @Override
-                public void onCancel(String response) {
-
-                }
-            });
-        } else {
-            Log.d(TAG, "initData: 2");
-            getListSchedulesFromServer();
-        }
-        startCheckReload();
+//        String localData = dataStorage.getListSchedules();
+//        currentSchedules = parseJson.parseListSchedules(localData);
+//        currentSchedules.schedules = null;
+//        Log.d(TAG, "initData: " + currentSchedules);
+//        if (!TextUtils.isEmpty(currentSchedules.version)){
+//            apiConnection.sendSchedulesVersionToServer(currentSchedules.version, new RequestNetworkListener() {
+//                @Override
+//                public void onSuccess(String response) {
+//                    // todo
+//                    getListSchedulesFromServer();
+//                }
+//
+//                @Override
+//                public void onFail(String response) {
+//
+//                }
+//
+//                @Override
+//                public void onCancel(String response) {
+//
+//                }
+//            });
+//        } else {
+//            Log.d(TAG, "initData: 2");
+//            getListSchedulesFromServer();
+//        }
+        currentSchedules = ListSchedules.getDataFromJson(DataStorage.getInstance().getListSchedules());
+        loadSchedulesIfNeed(currentSchedules);
+        getListSchedulesFromServer();
     }
 
     private void startCheckReload() {
-        Handler checkReloadVideoIfNeed = new Handler();
+        Handler checkReloadVideoIfNeed = new Handler(Looper.getMainLooper());
         checkReloadVideoIfNeed.postDelayed(new Runnable() {
             @Override
             public void run() {
                 try {
                     if (currentSchedules != null){
-                        for (int i = 0; i < currentSchedules.schedules.size(); i++){
-                            File f = new File(currentSchedules.schedules.get(i).pathOnDevice);
-                            if (!f.exists())
-                                loaderController.addRequest(currentSchedules.schedules.get(i).pathOnServer,
-                                        currentSchedules.schedules.get(i).pathOnDevice);
-                        }
+                       loadSchedulesIfNeed(currentSchedules);
                     }
+                    if (nextSchedules != null)
+                        loadSchedulesIfNeed(nextSchedules);
                 } catch (Exception ex){}
                 startCheckReload();
             }
@@ -99,13 +101,40 @@ public class ListSchedulesManager {
             public void onSuccess(String response) {
                 //check validate data
                 timeReload = 0;
-                nextSchedules = parseJson.parseListSchedules(response);
-                if (nextSchedules != null && nextSchedules.schedules != null){
-                    dataStore.saveListSchedules(response);
-                    loadSchedules(nextSchedules);
-                    startThreadCheckUpdate();
+                nextSchedules = ListSchedules.getDataFromJson(response);
+                if (currentSchedules == null) {
+                    Log.d(TAG, "getListSchedulesFromServer1: ");
+                    currentSchedules = nextSchedules;
+                    nextSchedules = null;
+                    if (!TextUtils.isEmpty(currentSchedules.devid)){
+                        dataStorage.saveListSchedules(currentSchedules.toJsonString());
+                        loadSchedulesIfNeed(currentSchedules);
+                    }
+                } else {
+                    if (!currentSchedules.version.equals(nextSchedules.version)) {
+                        Log.d(TAG, "getListSchedulesFromServer2: ");
+                        if (!TextUtils.isEmpty(nextSchedules.devid)){
+                            Log.d(TAG, "getListSchedulesFromServer3: ");
+                            for (int i = 0; i < currentSchedules.schedules.size(); i++){
+                                Schedule current = currentSchedules.schedules.get(i);
+                                for (int j = 0; j < nextSchedules.schedules.size(); j++){
+                                    Schedule next = nextSchedules.schedules.get(j);
+                                    if (current.id == next.id){
+                                        current.endtime = next.endtime;
+                                        current.starttime = next.starttime;
+                                        if (current.isFetched())
+                                            next.downloaded = true;
+                                    }
+                                }
+                            }
+                            dataStorage.saveListSchedules(nextSchedules.toJsonString());
+                            loadSchedulesIfNeed(nextSchedules);
+                            startThreadCheckUpdate();
+                        }
+                    }
                 }
 
+                startCheckReload();
             }
 
             @Override
@@ -146,13 +175,10 @@ public class ListSchedulesManager {
         try {
             for (int i = 0; i < nextSchedules.schedules.size(); i++){
                 Schedule schedule = nextSchedules.schedules.get(i);
-                Log.d(TAG, "checkUpdateCurrentScheduleByNextSchedule: " + nextSchedules.schedules.get(i).pathOnDevice);
-                File f = new File(schedule.pathOnDevice);
-                if (f.exists()){
-                    if (currentSchedules.version == null || !currentSchedules.version.equals(nextSchedules.version)) {
-                        currentIndex = -1;
-                    }
+                if (schedule.isFetched()){
                     currentSchedules = nextSchedules;
+                    DataStorage.getInstance().saveListSchedules(currentSchedules.toJsonString());
+                    nextSchedules = null;
                     cleanNotUseFile();
                     return true;
                 }
@@ -166,32 +192,39 @@ public class ListSchedulesManager {
     private void cleanNotUseFile(){
         Log.d(TAG, "cleanNotUseFile: ");
         try {
+            ArrayList<String> removeFiles = new ArrayList<>();
             File dir = new File(Ulti.getRootFolder());
+            Log.d(TAG, "cleanNotUseFile: " + dir.list().length);
             for (int i = 0; i < dir.list().length; i ++){
                 String path = Ulti.getRootFolder() + dir.list()[i];
+                Log.d(TAG, "cleanNotUseFile: " + path);
                 boolean onCurrentSchedule = false;
                 for (int j = 0; j < currentSchedules.schedules.size(); j++){
                     Schedule schedule = currentSchedules.schedules.get(j);
-                    if (schedule.pathOnDevice.equals(path)){
+                    if (schedule.getPathOnDevice().equals(path)){
                         onCurrentSchedule = true;
                         break;
                     }
                 }
                 if (!onCurrentSchedule && !currentPath.equals(path)){
-                    File f = new File(path);
-                    f.delete();
+                    removeFiles.add(path);
                 }
+            }
+            Log.d(TAG, "cleanNotUseFile: ccc" + removeFiles.size());
+            for (int i = 0; i < removeFiles.size(); i++){
+                File f = new File(removeFiles.get(i));
+                f.delete();
             }
         } catch (Exception e){
             e.printStackTrace();
         }
     }
 
-    private void loadSchedules(ListSchedules listSchedules){
+    private void loadSchedulesIfNeed(ListSchedules listSchedules){
         for (int i = 0; i < listSchedules.schedules.size(); i++){
-            Schedule schedule = listSchedules.schedules.get(i);
-            Log.d(TAG, "loadSchedules: " + schedule.pathOnServer);
-            loaderController.addRequest(schedule.pathOnServer, schedule.pathOnDevice);
+            if (!listSchedules.schedules.get(i).isFetched()) {
+                loaderController.addRequest(listSchedules.schedules.get(i));
+            }
         }
     }
 
@@ -202,18 +235,12 @@ public class ListSchedulesManager {
             if (currentIndex >= currentSchedules.schedules.size())
                 currentIndex = 0;
             Schedule schedule = currentSchedules.schedules.get(currentIndex);
-            File file = new File(schedule.pathOnDevice);
-            if (file.exists()){
-                long currentTime = System.currentTimeMillis();
-                if (currentTime >= schedule.startTime && currentTime <= schedule.endTime) {
-                    currentPath = schedule.pathOnDevice;
-                    return schedule;
-                }
-                else{
-                }
+            if (schedule.canPlay()){
+                currentPath = schedule.getPathOnDevice();
+                return schedule;
             }
             else {
-                loaderController.addRequest(schedule.pathOnServer, schedule.pathOnDevice);
+                loaderController.addRequest(schedule);
             }
             if (currentIndex == lastIndex)
                 break;
@@ -228,14 +255,15 @@ public class ListSchedulesManager {
         if (file.exists())
             file.delete();
         Schedule schedule = getScheduleByPathOnDevice(path);
+        schedule.downloaded = false;
         if (schedule != null)
-            LoaderController.getInstance().addRequest(schedule.pathOnServer, schedule.pathOnDevice);
+            LoaderController.getInstance().addRequest(schedule);
 
     }
 
     private Schedule getScheduleByPathOnDevice(String path){
         for (int i = 0; i < currentSchedules.schedules.size(); i++){
-            if (currentSchedules.schedules.get(i).pathOnDevice.equals(path))
+            if (currentSchedules.schedules.get(i).getPathOnDevice().equals(path))
                 return currentSchedules.schedules.get(i);
         }
         return null;
@@ -246,16 +274,33 @@ public class ListSchedulesManager {
             return  false;
         for (int i = 0; i < currentSchedules.schedules.size(); i++){
             Schedule schedule = currentSchedules.schedules.get(i);
-            File f = new File(schedule.pathOnDevice);
-            if (f.exists() && f.canRead())
+            if (schedule.canPlay())
             {
-                long currentTime = System.currentTimeMillis();
-                if (currentTime >= schedule.startTime && currentTime <= schedule.endTime) {
-                    Log.d(TAG, "canPlay: " + schedule.pathOnDevice);
-                    return true;
-                }
+                return true;
             }
         }
         return false;
     }
+
+    public void updateScheduleDownloadedState(int id, boolean downloaded){
+        try {
+            if (currentSchedules != null) {
+                for (int i = 0; i < currentSchedules.schedules.size(); i++) {
+                    if (currentSchedules.schedules.get(i).id == id)
+                        currentSchedules.schedules.get(i).downloaded = downloaded;
+                }
+                DataStorage.getInstance().saveListSchedules(currentSchedules.toJsonString());
+            }
+
+            if (nextSchedules != null) {
+                for (int i = 0; i < nextSchedules.schedules.size(); i++) {
+                    if (nextSchedules.schedules.get(i).id == id)
+                        nextSchedules.schedules.get(i).downloaded = downloaded;
+                }
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
 }

@@ -1,15 +1,12 @@
 package com.five9.admin.digitalsignage.Object;
 
-import android.util.Log;
-
-import com.five9.admin.digitalsignage.Common.Constrant;
+import com.five9.admin.digitalsignage.Common.Config;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 
 public class ParseJson {
 
@@ -37,17 +34,17 @@ public class ParseJson {
     public Schedule parseSchedule(JSONObject jsonObject){
         Schedule schedule = new Schedule();
         try {
-            schedule.pathOnServer = Constrant.END_POINT + getString(jsonObject, KEY_PATH);
+            schedule.path = Config.getServerEndpoint() + getString(jsonObject, KEY_PATH);
             schedule.type = getString(jsonObject, KEY_TYPE);
             String startTimeString = getString(jsonObject, KEY_START_TIME);
             String endTimeString = getString(jsonObject, KEY_END_TIME);
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-            schedule.startTime = dateFormat.parse(startTimeString).getTime();
-            schedule.endTime = dateFormat.parse(endTimeString).getTime();
-            Log.d(TAG, "parseSchedule: " + dateFormat.parse(endTimeString).toString());
-            Log.d(TAG, "parseSchedule: " + startTimeString + "===========" + endTimeString);
-            schedule.id = getString(jsonObject, KEY_ID);
-            schedule.genNameById();
+//            schedule.starttime = dateFormat.parse(startTimeString).getTime();
+//            schedule.endtime = dateFormat.parse(endTimeString).getTime();
+//            Log.d(TAG, "parseSchedule: " + dateFormat.parse(endTimeString).toString());
+//            Log.d(TAG, "parseSchedule: " + startTimeString + "===========" + endTimeString);
+//            schedule.id = getString(jsonObject, KEY_ID);
+//            schedule.genPathOnDevice();
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -59,7 +56,7 @@ public class ParseJson {
         try {
             JSONObject jsonObject = new JSONObject(json);
             listSchedules.version = getString(jsonObject, KEY_VERSION);
-            listSchedules.devId = getString(jsonObject, KEY_DEV_ID);
+            listSchedules.devid = getString(jsonObject, KEY_DEV_ID);
             listSchedules.schedules = new ArrayList();
             JSONArray jsonArray = jsonObject.getJSONArray(KEY_SCHEDULES);
             for(int i = 0; i < jsonArray.length(); i++){

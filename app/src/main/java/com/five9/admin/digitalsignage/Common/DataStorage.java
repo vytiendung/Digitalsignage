@@ -3,18 +3,22 @@ package com.five9.admin.digitalsignage.Common;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-public class DataStore {
+import com.five9.admin.digitalsignage.MyApplication;
+
+import static com.five9.admin.digitalsignage.Common.Constant.ACCESSTOKEN;
+
+public class DataStorage {
     private final String PREFS_NAME = "my_prefs";
     private final String KEY_LIST_SCHEDULES = "KEY_LIST_SCHEDULES";
-    private static DataStore instance;
+    private static DataStorage instance;
     private Context context;
-    private DataStore(Context context) {
-        this.context = context;
+    private DataStorage() {
+        this.context = MyApplication.getInstance();
     }
 
-    public static DataStore getInstance(Context context){
+    public static DataStorage getInstance(){
         if (instance == null)
-            instance = new DataStore(context);
+            instance = new DataStorage();
         return instance;
     }
 
@@ -34,5 +38,15 @@ public class DataStore {
 
     public String getListSchedules(){
         return getSharedPreferences().getString(KEY_LIST_SCHEDULES,"");
+    }
+
+    public void saveAccessToken(String s){
+        SharedPreferences.Editor editor = getEditor();
+        editor.putString(ACCESSTOKEN, s);
+        editor.apply();
+    }
+
+    public String getAccessToken(){
+        return getSharedPreferences().getString(ACCESSTOKEN,"");
     }
 }

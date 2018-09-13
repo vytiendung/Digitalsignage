@@ -1,16 +1,10 @@
 package com.five9.admin.digitalsignage.Common;
 
-import android.annotation.TargetApi;
 import android.content.Context;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Environment;
-import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.provider.DocumentFile;
 import android.util.Log;
-import android.webkit.MimeTypeMap;
 
 import com.five9.admin.digitalsignage.MyApplication;
 
@@ -71,8 +65,8 @@ public class DocumentFileUtil {
 
 	public static String[] getExtSdCardPaths() {
 		List<String> paths = new ArrayList<>();
-		for (File file : MyApplication.getIntance().getExternalFilesDirs("external")) {
-			if (file != null && !file.equals(MyApplication.getIntance().getExternalFilesDir
+		for (File file : MyApplication.getInstance().getExternalFilesDirs("external")) {
+			if (file != null && !file.equals(MyApplication.getInstance().getExternalFilesDir
 					("external"))) {
 				int index = file.getAbsolutePath().lastIndexOf("/Android/data");
 				if (index < 0) {

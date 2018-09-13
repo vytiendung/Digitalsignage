@@ -1,29 +1,27 @@
 package com.five9.admin.digitalsignage;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.DrawableContainer;
 import android.media.MediaPlayer;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.VideoView;
 
+import com.five9.admin.digitalsignage.Common.ApiConnection;
 import com.five9.admin.digitalsignage.Common.ListSchedulesManager;
 import com.five9.admin.digitalsignage.Object.Schedule;
 
+
 import java.io.IOException;
+
+
 
 public class PlayActivity extends AppCompatActivity {
 
@@ -36,7 +34,7 @@ public class PlayActivity extends AppCompatActivity {
     private String currentPath;
     private MediaPlayer mediaPlayer;
     private int STATE = 0;
-    private final int STATE_SHOW_DEFAIL = 0;
+    private final int STATE_SHOW_DEFAULT = 0;
     private final int STATE_PLAY_VIDEO = 1;
     private final int STATE_PLAY_AUDIO = 2;
     private final int STATE_SHOW_IMAGE = 3;
@@ -50,10 +48,10 @@ public class PlayActivity extends AppCompatActivity {
         setContentView(R.layout.activity_video);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         initView();
-        listSchedulesManager = ListSchedulesManager.getInstance(getApplicationContext());
-        listSchedulesManager.initData();
+        ApiConnection.getDataOnStart();
+        listSchedulesManager = ListSchedulesManager.getInstance();
+//        listSchedulesManager.initData();
         showDefaultView();
-
     }
 
     private void initView(){
@@ -93,7 +91,7 @@ public class PlayActivity extends AppCompatActivity {
             }
         };
         checkPlayVideoThread.start();
-        STATE = STATE_SHOW_DEFAIL;
+        STATE = STATE_SHOW_DEFAULT;
     }
 
     public boolean canPlaySchedule(){
@@ -108,14 +106,14 @@ public class PlayActivity extends AppCompatActivity {
         if (schedule == null){
             showDefaultView();
         } else {
-            Log.d(TAG, "playSchedules: " + schedule.pathOnDevice);
-            currentPath = schedule.pathOnDevice;
+            Log.d(TAG, "playSchedules: " + schedule.getPathOnDevice());
+            currentPath = schedule.getPathOnDevice();
             if (schedule.type.equals(Schedule.TYPE_VIDEO)) {
-                playVideo(schedule.pathOnDevice);
+                playVideo(schedule.getPathOnDevice());
             } else if (schedule.type.equals(Schedule.TYPE_AUDIO)) {
-                playAudio(schedule.pathOnDevice);
+                playAudio(schedule.getPathOnDevice());
             } else if (schedule.type.equals(Schedule.TYPE_IMAGE)){
-                showImage(schedule.pathOnDevice);
+                showImage(schedule.getPathOnDevice());
             } else {
                 Log.d(TAG, "playSchedules 2");
                 playSchedules();
