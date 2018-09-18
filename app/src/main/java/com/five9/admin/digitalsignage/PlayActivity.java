@@ -2,6 +2,7 @@ package com.five9.admin.digitalsignage;
 
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
@@ -11,7 +12,6 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.VideoView;
 
 import com.five9.admin.digitalsignage.Common.ApiConnection;
@@ -38,20 +38,37 @@ public class PlayActivity extends AppCompatActivity {
     private final int STATE_PLAY_VIDEO = 1;
     private final int STATE_PLAY_AUDIO = 2;
     private final int STATE_SHOW_IMAGE = 3;
+	private boolean checkPlayVideoThreadIsAlive = false;
+	private int timeCheckToPlay = 0;
 
-    @Override
+	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        setContentView(R.layout.activity_video);
+        setContentView(R.layout.activity_play);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         initView();
         ApiConnection.getDataOnStart();
         listSchedulesManager = ListSchedulesManager.getInstance();
 //        listSchedulesManager.initData();
-        showDefaultView();
+		checkToPlay();
+    }
+
+    public void checkToPlay(){
+		new Handler().postDelayed(new Runnable() {
+			@Override
+			public void run() {
+				timeCheckToPlay++;
+				if (canPlaySchedule())
+					playSchedules();
+				else if (timeCheckToPlay < 50)
+					checkToPlay();
+				else
+				 	playSchedules();
+			}
+		}, 100);
     }
 
     private void initView(){
@@ -64,33 +81,35 @@ public class PlayActivity extends AppCompatActivity {
         Log.d(TAG, "showDefaultView: ");
         if (videoView.isPlaying())
             videoView.stopPlayback();
-        videoView.setVisibility(View.INVISIBLE);
-        imvShowImage.setVisibility(View.GONE);
-        imvSplash.setVisibility(View.VISIBLE);
-        final Thread checkPlayVideoThread = new Thread(){
-            @Override
-            public void run() {
-                while (true){
-                    try {
-                        if (canPlaySchedule()){
-                            Handler handler = new Handler(Looper.getMainLooper());
-                            handler.postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    Log.d(TAG, "playSchedules 1");
-                                    playSchedules();
-                                }
-                            }, 0);
-                            break;
-                        }
-                        sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        };
-        checkPlayVideoThread.start();
+	    playVideo("", true);
+	    if (!checkPlayVideoThreadIsAlive) {
+		    Thread checkPlayVideoThread = new Thread() {
+			    @Override
+			    public void run() {
+				    while (true) {
+					    checkPlayVideoThreadIsAlive = true;
+					    try {
+						    if (canPlaySchedule()) {
+							    Handler handler = new Handler(Looper.getMainLooper());
+							    handler.postDelayed(new Runnable() {
+								    @Override
+								    public void run() {
+									    Log.d(TAG, "playSchedules 1");
+									    playSchedules();
+								    }
+							    }, 0);
+							    break;
+						    }
+						    sleep(1000);
+					    } catch (InterruptedException e) {
+						    e.printStackTrace();
+					    }
+				    }
+				    checkPlayVideoThreadIsAlive = false;
+			    }
+		    };
+		    checkPlayVideoThread.start();
+	    }
         STATE = STATE_SHOW_DEFAULT;
     }
 
@@ -101,15 +120,15 @@ public class PlayActivity extends AppCompatActivity {
     }
 
     public void playSchedules(){
-        Log.d(TAG, "playSchedules:");
         Schedule schedule = listSchedulesManager.getNextSchedule();
-        if (schedule == null){
+	    Log.d(TAG, "playSchedules:" + schedule);
+	    if (schedule == null){
             showDefaultView();
         } else {
             Log.d(TAG, "playSchedules: " + schedule.getPathOnDevice());
             currentPath = schedule.getPathOnDevice();
             if (schedule.type.equals(Schedule.TYPE_VIDEO)) {
-                playVideo(schedule.getPathOnDevice());
+                playVideo(schedule.getPathOnDevice(), false);
             } else if (schedule.type.equals(Schedule.TYPE_AUDIO)) {
                 playAudio(schedule.getPathOnDevice());
             } else if (schedule.type.equals(Schedule.TYPE_IMAGE)){
@@ -121,13 +140,18 @@ public class PlayActivity extends AppCompatActivity {
         }
     }
 
-    private void playVideo(String path) {
+    private void playVideo(String path, final boolean showDefault) {
         Log.d(TAG, "playVideo: ");
         STATE = STATE_PLAY_VIDEO;
         videoView.setVisibility(View.VISIBLE);
         imvSplash.setVisibility(View.GONE);
         imvShowImage.setVisibility(View.GONE);
-        videoView.setVideoPath(path);
+        if (!showDefault)
+            videoView.setVideoPath(path);
+        else {
+	        String s = "android.resource://" + getPackageName() + "/" + R.raw.loading_logo_five9;
+	        videoView.setVideoURI(Uri.parse(s));
+        }
         videoView.requestFocus();
         videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             public void onPrepared(MediaPlayer mp) {
@@ -138,7 +162,8 @@ public class PlayActivity extends AppCompatActivity {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
                 Log.d(TAG, "playVideo onError: ");
-                listSchedulesManager.onPlayErrFile(currentPath);
+	            if (!showDefault)
+                    listSchedulesManager.onPlayErrFile(currentPath);
                 Log.d(TAG, "playSchedules 3");
                 playSchedules();
                 return true;
@@ -199,8 +224,8 @@ public class PlayActivity extends AppCompatActivity {
             imvSplash.setVisibility(View.GONE);
             imvShowImage.setVisibility(View.VISIBLE);
             Drawable drawable = Drawable.createFromPath(pathOnDevice);
-            imvShowImage.setImageDrawable(drawable);
-            RelativeLayout.LayoutParams par = (RelativeLayout.LayoutParams) imvShowImage.getLayoutParams();
+//            imvShowImage.setImageDrawable(drawable);
+//            RelativeLayout.LayoutParams par = (RelativeLayout.LayoutParams) imvShowImage.getLayoutParams();
 //            par.width = ViewGroup.LayoutParams.MATCH_PARENT;
 //            par.height = ViewGroup.LayoutParams.MATCH_PARENT;
 //            imvShowImage.setLayoutParams(par);

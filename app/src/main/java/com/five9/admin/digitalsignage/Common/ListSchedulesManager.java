@@ -229,23 +229,27 @@ public class ListSchedulesManager {
     }
 
     public Schedule getNextSchedule(){
-        int lastIndex = currentIndex;
-        while (true){
-            currentIndex ++;
-            if (currentIndex >= currentSchedules.schedules.size())
-                currentIndex = 0;
-            Schedule schedule = currentSchedules.schedules.get(currentIndex);
-            if (schedule.canPlay()){
-                currentPath = schedule.getPathOnDevice();
-                return schedule;
-            }
-            else {
-                loaderController.addRequest(schedule);
-            }
-            if (currentIndex == lastIndex)
-                break;
-            if (lastIndex == -1)
-                lastIndex = 0;
+        try {
+	        int lastIndex = currentIndex;
+	        while (true){
+		        currentIndex ++;
+		        if (currentIndex >= currentSchedules.schedules.size())
+			        currentIndex = 0;
+		        Schedule schedule = currentSchedules.schedules.get(currentIndex);
+		        if (schedule.canPlay()){
+			        currentPath = schedule.getPathOnDevice();
+			        return schedule;
+		        }
+		        else {
+			        loaderController.addRequest(schedule);
+		        }
+		        if (currentIndex == lastIndex)
+			        break;
+		        if (lastIndex == -1)
+			        lastIndex = 0;
+	        }
+        }catch (Exception e){
+        	e.printStackTrace();
         }
         return null;
     }
