@@ -2,5 +2,39 @@
 <resources>
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="transparent">#00000000</color>
+    <color name="transparent_1">#4D000000</color>
+    <color name="black">#000000</color>
+
+    <color name="white">#FFFFFF</color>
+    <color name="gray_1">#d6d4d4</color>
+    <color name="gray_2">#F1F5F8</color>
+
+
+
+    <color name="text_body">#08121E</color>
+    <color name="text_des">#4D6678</color>
+    <color name="text_des_2">#E3EBF0</color>
+
+
+    <color name="greenPrimary">#3EAA5F</color>
+    <color name="green2">#94D4AB</color>
+
+    <color name="btnDisable">#B8C9D3</color>
+    <color name="red">#F65F5F</color>
+    <color name="red2">#DA3535</color>
+
+    <color name="btn_connect_fb">#FFFFFF</color>
+
+    <color name="colorAccent">#3EAA5F</color>
+    <color name="color_text_label">#08121e</color>
+    <color name="color_line_divine">#E3EBF0</color>
+    <color name="color_text_value">#4d6678</color>
+    <color name="color_seek_bar">#3BAB63</color>
+    <color name="color_big_title">#08121e</color>
+    <color name="color_next_button_toolbar">#3eaa5f</color>
+    <color name="color_footer">#8ea3af</color>
+    <color name="color_warn">#ED8A17</color>
+    <color name="color_title_in_item_dialog">#DE000000</color>
+    <color name="background_no_connection_view">#FFF6F6F6</color>
 </resources>

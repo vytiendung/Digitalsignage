@@ -18,11 +18,16 @@ public class Constant {
     public static final String TOKEN = "token";
     public static final String ACCESSTOKEN = "accesstoken";
     public static final String DEV_ID = "devid";
+	public static final String SCK_EVT_REQUEST_NEWS_CHEDULE = "REQ_NEW_SCL";
+	public static final String SCK_EVT_RESPONSE_UPDATESCHEDULE = "REP_SCL";
+	public static final String SCHEDULE = "schedule";
+	public static final String EVENT = "event";
 
 
     public static int GET_METHOD = 0;
     public static int POST_METHOD = 1;
     public static int PUT_METHOD = 2;
+    public static final String END_POINT = "END_POINT";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
     public static final String IP_ADDRESS = "ipaddr";

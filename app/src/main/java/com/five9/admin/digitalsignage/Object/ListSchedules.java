@@ -13,7 +13,6 @@ public class ListSchedules {
     public static final String DEVID = "devid";
     public static final String SCHEDULES = "schedules";
     public String version = "";
-    public String devid = "";
     public ArrayList <Schedule> schedules = new ArrayList<>();
 
     public static ListSchedules getDataFromJson(String json) {
@@ -21,7 +20,6 @@ public class ListSchedules {
         try {
             JSONObject jsonObject = new JSONObject(json);
             obj.version = jsonObject.getString(VERSION);
-            obj.devid = jsonObject.getString(DEVID);
             JSONArray jsonArray = jsonObject.getJSONArray(SCHEDULES);
             for (int i = 0; i < jsonArray.length(); i++){
                 obj.schedules.add(Schedule.getDataFromJson(jsonArray.getString(i)));

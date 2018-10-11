@@ -49,4 +49,17 @@ public class DataStorage {
     public String getAccessToken(){
         return getSharedPreferences().getString(ACCESSTOKEN,"");
     }
+
+	public void saveString(String key, String value) {
+		if (value.toLowerCase().equalsIgnoreCase("null")) {
+			value = "";
+		}
+		SharedPreferences.Editor editor = getEditor();
+		editor.putString(key, value);
+		editor.apply();
+	}
+
+	public String getString(String key, String defaulValue) {
+		return getSharedPreferences().getString(key, defaulValue);
+	}
 }

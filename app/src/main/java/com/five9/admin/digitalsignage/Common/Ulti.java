@@ -3,6 +3,7 @@ package com.five9.admin.digitalsignage.Common;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
+import com.five9.admin.digitalsignage.MyApplication;
 
 import java.io.File;
 import java.util.Collections;
@@ -13,6 +14,7 @@ import java.util.regex.Pattern;
 public class Ulti {
     private static final Pattern DIR_SEPORATOR = Pattern.compile("/");
     public static String getRootFolder(){
+//    	return MyApplication.getInstance().getExternalFilesDir(null).getPath();
         return  Environment.getExternalStorageDirectory() + Constant.ROOT_FOLDER;
     }
 

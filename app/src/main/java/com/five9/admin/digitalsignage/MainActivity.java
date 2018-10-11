@@ -28,7 +28,9 @@ public class MainActivity extends AppCompatActivity {
                     android.Manifest.permission.ACCESS_NETWORK_STATE,
                     android.Manifest.permission.READ_EXTERNAL_STORAGE,
                     android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.RECEIVE_BOOT_COMPLETED
+                    Manifest.permission.RECEIVE_BOOT_COMPLETED,
+		            Manifest.permission.ACCESS_WIFI_STATE
+
             };
 
 

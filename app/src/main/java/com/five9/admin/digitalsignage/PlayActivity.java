@@ -1,5 +1,6 @@
 package com.five9.admin.digitalsignage;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -8,9 +9,7 @@ import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
+import android.view.*;
 import android.widget.ImageView;
 import android.widget.VideoView;
 
@@ -52,6 +51,17 @@ public class PlayActivity extends AppCompatActivity {
         initView();
         ApiConnection.getDataOnStart();
         listSchedulesManager = ListSchedulesManager.getInstance();
+        listSchedulesManager.setListener(new ListSchedulesManager.Listener() {
+	        @Override
+	        public void onNewScheduleCanPlay() {
+	        	runOnUiThread(new Runnable() {
+			        @Override
+			        public void run() {
+				        playSchedules();
+			        }
+		        });
+	        }
+        });
 //        listSchedulesManager.initData();
 		checkToPlay();
     }
@@ -63,7 +73,7 @@ public class PlayActivity extends AppCompatActivity {
 				timeCheckToPlay++;
 				if (canPlaySchedule())
 					playSchedules();
-				else if (timeCheckToPlay < 50)
+				else if (timeCheckToPlay < 20)
 					checkToPlay();
 				else
 				 	playSchedules();
@@ -115,13 +125,14 @@ public class PlayActivity extends AppCompatActivity {
 
     public boolean canPlaySchedule(){
         boolean res = listSchedulesManager.canPlay();
-        Log.d(TAG, "canPlaySchedule: " + res);
+//        Log.d(TAG, "canPlaySchedule: " + res);
         return res;
     }
 
     public void playSchedules(){
         Schedule schedule = listSchedulesManager.getNextSchedule();
 	    Log.d(TAG, "playSchedules:" + schedule);
+	    stopPlayMp3();
 	    if (schedule == null){
             showDefaultView();
         } else {
@@ -140,7 +151,15 @@ public class PlayActivity extends AppCompatActivity {
         }
     }
 
-    private void playVideo(String path, final boolean showDefault) {
+	private void stopPlayMp3() {
+		if (mediaPlayer != null) {
+			mediaPlayer.stop();
+			mediaPlayer.release();
+			mediaPlayer = null;
+		}
+	}
+
+	private void playVideo(String path, final boolean showDefault) {
         Log.d(TAG, "playVideo: ");
         STATE = STATE_PLAY_VIDEO;
         videoView.setVisibility(View.VISIBLE);
@@ -224,7 +243,7 @@ public class PlayActivity extends AppCompatActivity {
             imvSplash.setVisibility(View.GONE);
             imvShowImage.setVisibility(View.VISIBLE);
             Drawable drawable = Drawable.createFromPath(pathOnDevice);
-//            imvShowImage.setImageDrawable(drawable);
+            imvShowImage.setImageDrawable(drawable);
 //            RelativeLayout.LayoutParams par = (RelativeLayout.LayoutParams) imvShowImage.getLayoutParams();
 //            par.width = ViewGroup.LayoutParams.MATCH_PARENT;
 //            par.height = ViewGroup.LayoutParams.MATCH_PARENT;
@@ -273,4 +292,24 @@ public class PlayActivity extends AppCompatActivity {
 
         super.onResume();
     }
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int id = item.getItemId();
+		switch (id) {
+			case R.id.action_setting:
+				Intent i =    new Intent(PlayActivity.this, SettingActivity.class);
+				i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+				startActivity(i);
+				break;
+		}
+		return super.onOptionsItemSelected(item);
+	}
 }

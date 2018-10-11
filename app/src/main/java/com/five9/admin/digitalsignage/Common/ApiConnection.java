@@ -9,6 +9,7 @@ import android.util.Log;
 
 import com.five9.admin.digitalsignage.BuildConfig;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -43,101 +44,27 @@ import static com.five9.admin.digitalsignage.Common.Constant.USERNAME;
 public class ApiConnection {
     public static String TAG = "ApiConnection";
 
-    public void sendSchedulesVersionToServer(String version, RequestNetworkListener listener){
-        listener.onSuccess("");
-    }
-
-    public void getListSchedules(final RequestNetworkListener listener){
-        new DoBackgroundTask(new IDoBackgroundTask() {
-            @Override
-            public void doInBackGround() {
-                if (TextUtils.isEmpty(DataTranform.jwtToken))
-                    requestLogin(listener);
-                else
-                    requestGetSchedule(listener);
-            }
-        }).execute();
-    }
-
-    public void requestLogin(RequestNetworkListener listener){
-        try {
-            URL url = new URL(Config.getServerEndpoint() + Constant.API_V1 + Constant.LOGIN_METHOD);
-            HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
-            httpConnection.setRequestMethod("POST");
-            HashMap<String,String> mapParam = new HashMap<>();
-            mapParam.put(USERNAME, "admin");
-            mapParam.put(PASSWORD, "Five9@123");
-            String postContent = getPostContent(mapParam);
-            httpConnection.addRequestProperty("Connection", "keep-alive");
-            httpConnection.setRequestProperty("Accept-Encoding", "identity");
-            httpConnection.setDoOutput(true);
-            httpConnection.setReadTimeout(30000);
-            httpConnection.setConnectTimeout(30000);
-            httpConnection.setFixedLengthStreamingMode(postContent.length());
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(httpConnection.getOutputStream());
-            outputStreamWriter.write(postContent);
-            outputStreamWriter.close();
-            httpConnection.connect();
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
-            StringBuilder stringBuilder = new StringBuilder();
-            String tmpString;
-            while( (tmpString = bufferedReader.readLine()) != null ) {
-                stringBuilder.append(tmpString + '\n');
-            }
-            String res = stringBuilder.toString();
-            Log.d(TAG, "requestLogin: " + res);
-            JSONObject jsonObject = new JSONObject(res);
-            DataTranform.jwtToken = "JWT " + jsonObject.getString(Constant.TOKEN);
-            requestGetSchedule(listener);
-            httpConnection.disconnect();
-        } catch (Exception e) {
-            Log.d(TAG, "test: " + e.getMessage());
-            listener.onFail(e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-
-    private String getPostContent(Map source){
-        String params = "";
-        Set<Map.Entry> set = source.entrySet();
-        for (Map.Entry entry : set) {
-            if (params.length() > 0) {
-                params = params + "&";
-            }
-            params = params + (String) entry.getKey() + "=" + (String) entry.getValue();
-        }
-        return params;
-    }
-
     public static void getDataOnStart(){
+	    login(new RequestNetworkListener() {
+		    @Override
+		    public void onSuccess(String response) {
+			    onLoginSuccess();
+		    }
 
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
-                login(new RequestNetworkListener() {
-                    @Override
-                    public void onSuccess(String response) {
-                        onLoginSuccess();
-                    }
+		    @Override
+		    public void onFail(String response) {
+			    new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+				    @Override
+				    public void run() {
+					    getDataOnStart();
+				    }
+			    }, 1000);
+		    }
 
-                    @Override
-                    public void onFail(String response) {
-                        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                getDataOnStart();
-                            }
-                        }, 1000);
-                    }
-
-                    @Override
-                    public void onCancel(String response) {
-                    }
-                });
-                return null;
-            }
-        }.execute();
+		    @Override
+		    public void onCancel(String response) {
+		    }
+	    });
     }
 
     private static void onLoginSuccess() {
@@ -197,10 +124,11 @@ public class ApiConnection {
                 }
             },1000);
         }else {
-            getInfo(new RequestNetworkListener() {
+	        DataStorage.getInstance().saveAccessToken(DataTranform.accessToken);
+	        getInfo(new RequestNetworkListener() {
                 @Override
                 public void onSuccess(String response) {
-                    onGetInfoSuccess();
+                    onGetInfoSuccess(response);
                 }
 
                 @Override
@@ -221,109 +149,125 @@ public class ApiConnection {
         }
     }
 
-    private static void onGetInfoSuccess() {
-        SocketController.getInstance().startConnect("");
+    private static void onGetInfoSuccess(String res) {
+	    SocketController.getInstance().startConnect(res);
         ListSchedulesManager.getInstance().initData();
     }
 
     private static void login(final RequestNetworkListener listener){
-        try {
-            String url = Config.getServerEndpoint() + Constant.API_V1 + Constant.LOGIN_METHOD;
-            OkHttpClient client = getOkHttpBuilder().build();
-            RequestBody formBody = new FormBody.Builder()
-                    .add(USERNAME, Config.getUseName())
-                    .add(PASSWORD, Config.getPw())
-                    .build();
-            Response response = client.newCall(getRequest(url, formBody, POST_METHOD)).execute();
-            String res = response.body().string();
-            JSONObject jsonObject = new JSONObject(res);
-            DataTranform.jwtToken = "JWT " + jsonObject.getString(Constant.TOKEN);
-            response.close();
-            listener.onSuccess(res);
-        } catch (Exception e) {
-            Log.d(TAG, "login err: " + e.getMessage());
-            listener.onFail(e.getMessage());
-            e.printStackTrace();
-        }
+
+	    new AsyncTask<Void, Void, Void>() {
+		    @Override
+		    protected Void doInBackground(Void... voids) {
+			    try {
+				    String url = Config.getServerEndpoint() + Constant.API_V1 + Constant.LOGIN_METHOD;
+				    OkHttpClient client = getOkHttpBuilder().build();
+				    RequestBody formBody = new FormBody.Builder()
+						    .add(USERNAME, Config.getUseName())
+						    .add(PASSWORD, Config.getPw())
+						    .build();
+				    Response response = client.newCall(getRequest(url, formBody, POST_METHOD)).execute();
+				    String res = response.body().string();
+				    JSONObject jsonObject = new JSONObject(res);
+				    DataTranform.jwtToken = "JWT " + jsonObject.getString(Constant.TOKEN);
+				    response.close();
+				    Log.d(TAG, "login: " + res);
+				    listener.onSuccess(res);
+			    } catch (Exception e) {
+				    Log.d(TAG, "login err: " + e.getMessage());
+				    listener.onFail(e.getMessage());
+				    e.printStackTrace();
+			    }
+			    return null;
+		    }
+	    }.execute();
     }
 
     private static void deviceRegister(final RequestNetworkListener listener){
-        try {
-            String url = Config.getServerEndpoint() + Constant.API_V1 + Constant.DEVICE + Constant.REGISTER_METHOD;
-            OkHttpClient client = getOkHttpBuilder().build();
-            RequestBody formBody = new FormBody.Builder()
-                    .add(ACCESSTOKEN, DataStorage.getInstance().getAccessToken())
-                    .add(IP_ADDRESS, DeviceInfo.getIpAddress())
-                    .add(MAC_ADDRESS, DeviceInfo.getMacAddress())
-                    .add(IS_DEVICE, "true")
-                    .build();
-            Response response = client.newCall(getRequest(url, formBody, POST_METHOD)).execute();
-            String res = response.body().string();
-            JSONObject jsonObject = new JSONObject(res);
-            DataStorage.getInstance().saveAccessToken(jsonObject.getString(Constant.ACCESSTOKEN));
-            response.close();
-            listener.onSuccess(res);
-        } catch (Exception e) {
-            Log.d(TAG, "deviceRegister err: " + e.getMessage());
-            listener.onFail(e.getMessage());
-            e.printStackTrace();
-        }
+	    new AsyncTask<Void, Void, Void>() {
+		    @Override
+		    protected Void doInBackground(Void... voids) {
+			    try {
+				    String url = Config.getServerEndpoint() + Constant.API_V1 + Constant.DEVICE + Constant.REGISTER_METHOD;
+				    OkHttpClient client = getOkHttpBuilder().build();
+				    RequestBody formBody = new FormBody.Builder()
+						    .add(ACCESSTOKEN, DataStorage.getInstance().getAccessToken())
+						    .add(IP_ADDRESS, DeviceInfo.getIpAddress())
+						    .add(MAC_ADDRESS, DeviceInfo.getMacAddress())
+						    .add(IS_DEVICE, "true")
+						    .build();
+				    Response response = client.newCall(getRequest(url, formBody, POST_METHOD)).execute();
+				    String res = response.body().string();
+				    JSONObject jsonObject = new JSONObject(res);
+				    DataTranform.accessToken = jsonObject.getString(Constant.ACCESSTOKEN);
+				    response.close();
+				    Log.d(TAG, "deviceRegister: " + res);
+				    listener.onSuccess(res);
+			    } catch (Exception e) {
+				    Log.d(TAG, "deviceRegister err: " + e.getMessage());
+				    listener.onFail(e.getMessage());
+				    e.printStackTrace();
+			    }
+			    return null;
+		    }
+	    }.execute();
     }
 
     private static void getId(final RequestNetworkListener listener){
-        try {
-            String url = Config.getServerEndpoint() + Constant.API_V1 + Constant.DEVICE + Constant.GET_ID_METHOD;
-            OkHttpClient client = getOkHttpBuilder().build();
-            RequestBody formBody = new FormBody.Builder()
-                    .add(ACCESSTOKEN, DataStorage.getInstance().getAccessToken())
-                    .build();
-            Response response = client.newCall(getRequest(url, formBody, POST_METHOD)).execute();
-            String res = response.body().string();
-            JSONObject jsonObject = new JSONObject(res);
-            DataTranform.devid = jsonObject.getString(Constant.DEV_ID);
-            response.close();
-            listener.onSuccess(res);
-        } catch (Exception e) {
-            Log.d(TAG, "deviceRegister err: " + e.getMessage());
-            listener.onFail(e.getMessage());
-            e.printStackTrace();
-        }
+	    new AsyncTask<Void, Void, Void>() {
+		    @Override
+		    protected Void doInBackground(Void... voids) {
+			    try {
+				    String url = Config.getServerEndpoint() + Constant.API_V1 + Constant.DEVICE + Constant.GET_ID_METHOD;
+				    OkHttpClient client = getOkHttpBuilder().build();
+				    RequestBody formBody = new FormBody.Builder()
+						    .add(ACCESSTOKEN, DataTranform.accessToken)
+						    .build();
+				    Response response = client.newCall(getRequest(url, formBody, POST_METHOD)).execute();
+				    String res = response.body().string();
+				    JSONObject jsonObject = new JSONObject(res);
+				    DataTranform.devid = jsonObject.getString(Constant.DEV_ID);
+				    response.close();
+				    Log.d(TAG, "getId: " + res);
+				    listener.onSuccess(res);
+			    } catch (Exception e) {
+				    Log.d(TAG, "getId err: " + e.getMessage());
+				    listener.onFail(e.getMessage());
+				    e.printStackTrace();
+			    }
+			    return null;
+		    }
+	    }.execute();
+
     }
 
     private static void getInfo(final RequestNetworkListener listener){
-        try {
-            String url = Config.getServerEndpoint() + Constant.API_V1 + Constant.DEVICE + Constant.GET_INFO_METHOD;
-            OkHttpClient client = getOkHttpBuilder().build();
-            RequestBody formBody = new FormBody.Builder()
-                    .add(ACCESSTOKEN, DataStorage.getInstance().getAccessToken())
-                    .add(DEV_ID, DataTranform.devid)
-                    .add(OPTION, KAFKA)
-                    .build();
-            Response response = client.newCall(getRequest(url, formBody, POST_METHOD)).execute();
-            String res = response.body().string();
-            listener.onSuccess(res);
-        } catch (Exception e) {
-            Log.d(TAG, "deviceRegister err: " + e.getMessage());
-            listener.onFail(e.getMessage());
-            e.printStackTrace();
-        }
-    }
+	    new AsyncTask<Void, Void, Void>() {
+		    @Override
+		    protected Void doInBackground(Void... voids) {
+			    try {
+				    String url = Config.getServerEndpoint() + Constant.API_V1 + Constant.DEVICE + Constant.GET_INFO_METHOD;
+				    OkHttpClient client = getOkHttpBuilder().build();
+				    RequestBody formBody = new FormBody.Builder()
+						    .add(ACCESSTOKEN, DataStorage.getInstance().getAccessToken())
+						    .add(DEV_ID, DataTranform.devid)
+						    .add(OPTION, KAFKA)
+						    .build();
+				    Response response = client.newCall(getRequest(url, formBody, POST_METHOD)).execute();
+				    String res = response.body().string();
+				    Log.d(TAG, "getInfo: " + res);
+				    JSONObject jsonObject = new JSONObject(res);
+				    JSONObject config = jsonObject.getJSONObject("configs");
+				    listener.onSuccess(config.getString("socket"));
+			    } catch (Exception e) {
+				    Log.d(TAG, "getInfo err: " + e.getMessage());
+				    listener.onFail(e.getMessage());
+				    e.printStackTrace();
+			    }
+			    return null;
+		    }
+	    }.execute();
 
-
-    public void requestGetSchedule(RequestNetworkListener listener){
-        try {
-            String url = Config.getServerEndpoint() + Constant.API_V1 + Constant.GET_SCHEDULE_METHOD;
-            OkHttpClient client = getOkHttpBuilder().build();
-            Response response = client.newCall(getRequest(url, null, GET_METHOD)).execute();
-            String res = response.body().string();
-            Log.d(TAG, "requestGetSchedule: " + res);
-            listener.onSuccess(res);
-
-        } catch (Exception e) {
-            Log.d(TAG, "requestGetSchedule err: " + e.getMessage());
-            listener.onFail(e.getMessage());
-            e.printStackTrace();
-        }
     }
 
     @NonNull

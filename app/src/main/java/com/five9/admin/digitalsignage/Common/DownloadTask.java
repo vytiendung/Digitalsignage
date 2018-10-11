@@ -45,7 +45,7 @@ public class DownloadTask  extends AsyncTask<Void, Void, Boolean> {
             }
             URL url;
 
-            url = new URL("http://thinkzone.vn/" + schedule.path);
+            url = new URL(schedule.path);
             Log.d(TAG, "download: " + url);
             Request.Builder builder = new Request.Builder()
                     .url(url);

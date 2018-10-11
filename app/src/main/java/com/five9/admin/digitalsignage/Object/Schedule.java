@@ -75,9 +75,7 @@ public class Schedule {
     }
 
     public boolean canPlay(){
-    	if (type.equalsIgnoreCase(TYPE_IMAGE))
-    		return false;
-        long currentTime = getStartTimeLong(); //System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis();
         return isFetched() && currentTime >= getStartTimeLong() && currentTime <= getEndTimeLong();
     }
 
