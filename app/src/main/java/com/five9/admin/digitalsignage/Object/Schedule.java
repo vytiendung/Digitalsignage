@@ -4,6 +4,9 @@ import com.five9.admin.digitalsignage.Common.Ulti;
 import com.google.gson.Gson;
 
 import java.io.File;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
@@ -12,7 +15,9 @@ public class Schedule {
     public static final String TYPE_VIDEO = "video";
     public static final String TYPE_AUDIO = "audio";
     public static final String TYPE_IMAGE = "image";
-    private static final String TAG = "Schedule";
+	public static final String MD5CKSUM = "md5cksum";
+
+	private static final String TAG = "Schedule";
 
 
     public String path = "";
@@ -21,6 +26,7 @@ public class Schedule {
     public String starttime;
     public String endtime;
     public boolean downloaded = false;
+    public String md5cksum = "";
 
     public static Schedule getDataFromJson(String json) {
         Gson gson = new Gson();
@@ -71,6 +77,7 @@ public class Schedule {
         File f = new File(getPathOnDevice());
         if (!f.exists())
             downloaded = false;
+
         return downloaded;
     }
 
@@ -78,5 +85,4 @@ public class Schedule {
         long currentTime = System.currentTimeMillis();
         return isFetched() && currentTime >= getStartTimeLong() && currentTime <= getEndTimeLong();
     }
-
 }

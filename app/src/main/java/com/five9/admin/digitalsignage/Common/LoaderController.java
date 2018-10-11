@@ -28,15 +28,15 @@ public class LoaderController {
 
     public void addRequest(Schedule schedule){
         if (schedule.id != scheduleIdLoading) {
-            if (getRequestByPathOnDevice(schedule.id) == null) {
+            if (getRequestBySchedule(schedule.id) == null) {
                 LoadRequest newRequest = new LoadRequest(schedule);
                 listLoadRequests.add(newRequest);
-                loadVideoIfCan();
+                loadFileIfCan();
             }
         }
     }
 
-    private LoadRequest getRequestByPathOnDevice(int scheduleId) {
+    private LoadRequest getRequestBySchedule(int scheduleId) {
         for (int i = 0; i < listLoadRequests.size(); i++){
             if (listLoadRequests.get(i).schedule.id == scheduleId)
                 return listLoadRequests.get(i);
@@ -44,8 +44,8 @@ public class LoaderController {
         return null;
     }
 
-    private void loadVideoIfCan(){
-        Log.d(TAG, "loadVideoIfCan: " + loading + " " + listLoadRequests.size());
+    private void loadFileIfCan(){
+        Log.d(TAG, "loadFileIfCan: " + loading + " " + listLoadRequests.size());
         if (!loading && listLoadRequests.size() > 0){
             LoadRequest request = listLoadRequests.get(0);
             downloadFile(request);
@@ -63,30 +63,30 @@ public class LoaderController {
 
     public void onLoadRequestSuccess(LoadRequest request) {
         loading = false;
-        loadVideoIfCan();
-        ListSchedulesManager.getInstance().updateScheduleDownloadedState(request.schedule.id, true);
-        Log.d(TAG, "onSuccess: " + request.schedule.id);
-        scheduleIdLoading = -1;
+	    scheduleIdLoading = -1;
+	    loadFileIfCan();
+	    ListSchedulesManager.getInstance().updateScheduleDownloadedState(request.schedule.id, true);
+	    Log.d(TAG, "onSuccess: " + request.schedule.id);
     }
 
     public void onLoadRequestFail(LoadRequest request) {
         Log.d(TAG, "onFail: ");
         loading = false;
-        ListSchedulesManager.getInstance().updateScheduleDownloadedState(request.schedule.id, false);
-        doIfLoadFail(request);
-        loadVideoIfCan();
-        scheduleIdLoading = -1;
+	    scheduleIdLoading = -1;
+	    ListSchedulesManager.getInstance().updateScheduleDownloadedState(request.schedule.id, false);
+	    doIfLoadFail(request);
+	    loadFileIfCan();
     }
 
     public void onLoadRequestCancel(LoadRequest request) {
         Log.d(TAG, "onCancel: ");
         loading = false;
         doIfLoadFail(request);
-        loadVideoIfCan();
+        loadFileIfCan();
     }
 
     private void doIfLoadFail(LoadRequest request) {
-        LoadRequest check = getRequestByPathOnDevice(request.schedule.id);
+        LoadRequest check = getRequestBySchedule(request.schedule.id);
         Log.d(TAG, "doIfLoadFail: " + check);
         if (check == null) {
             request.loadFailTime++;

@@ -243,12 +243,9 @@ public class PlayActivity extends AppCompatActivity {
             imvSplash.setVisibility(View.GONE);
             imvShowImage.setVisibility(View.VISIBLE);
             Drawable drawable = Drawable.createFromPath(pathOnDevice);
+            if (drawable == null)
+            	throw new Exception();
             imvShowImage.setImageDrawable(drawable);
-//            RelativeLayout.LayoutParams par = (RelativeLayout.LayoutParams) imvShowImage.getLayoutParams();
-//            par.width = ViewGroup.LayoutParams.MATCH_PARENT;
-//            par.height = ViewGroup.LayoutParams.MATCH_PARENT;
-//            imvShowImage.setLayoutParams(par);
-
             Handler handler = new Handler(Looper.getMainLooper());
             handler.postDelayed(new Runnable() {
                 @Override
@@ -309,6 +306,8 @@ public class PlayActivity extends AppCompatActivity {
 				i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 				startActivity(i);
 				break;
+			case R.id.action_close:
+				finishAffinity();
 		}
 		return super.onOptionsItemSelected(item);
 	}

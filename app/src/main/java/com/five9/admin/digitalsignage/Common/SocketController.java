@@ -3,6 +3,8 @@ package com.five9.admin.digitalsignage.Common;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
+import com.five9.admin.digitalsignage.MyApplication;
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
@@ -18,6 +20,10 @@ import static com.five9.admin.digitalsignage.Common.Constant.*;
 public class SocketController {
 	private static SocketController instance;
     private Socket socket;
+	private WebSocket ws;
+	private String socketURl;
+	public String TAG = "SocketController";
+
 	private final class EchoWebSocketListener extends WebSocketListener {
 		private static final int NORMAL_CLOSURE_STATUS = 1000;
 
@@ -39,6 +45,18 @@ public class SocketController {
 		public void onClosing(WebSocket webSocket, int code, String reason) {
 			webSocket.close(NORMAL_CLOSURE_STATUS, null);
 			output("Closing : " + code + " / " + reason);
+//			new Handler(Looper.getMainLooper()).post(new Runnable() {
+//				@Override
+//				public void run() {
+//					Toast.makeText(MyApplication.getInstance(),"onClosing", Toast.LENGTH_LONG).show();
+//				}
+//			});
+			new Handler().postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					reConnect();
+				}
+			}, 5000);
 		}
 
 		@Override
@@ -48,7 +66,13 @@ public class SocketController {
 	}
 
 	private void setOnGetMess(String mess){
-		Log.d("abcxxx", "setOnGetMess: " + mess);
+		Log.d(TAG, "setOnGetMess: " + mess);
+//		new Handler(Looper.getMainLooper()).post(new Runnable() {
+//			@Override
+//			public void run() {
+//				Toast.makeText(MyApplication.getInstance(),"setOnGetMess", Toast.LENGTH_LONG).show();
+//			}
+//		});
 		try {
 			JSONObject jsonObject = new JSONObject(mess);
 			String event = jsonObject.getString(EVENT);
@@ -76,13 +100,24 @@ public class SocketController {
     }
 
 	public void startConnect(String url){
-		Log.d("abcxxx", "startConnect: " + url);
+		Log.d(TAG, "startConnect: " + url);
+		socketURl = url;
 		OkHttpClient client = new OkHttpClient();
-		//ws://192.168.8.22:8080/socketads?devid=0001000110110111
 		Request request = new Request.Builder().url(url).build();
-		WebSocket ws = client.newWebSocket(request, new EchoWebSocketListener());
+		ws = client.newWebSocket(request, new EchoWebSocketListener());
 		client.dispatcher().executorService().shutdown();
 		ws.send(SCK_EVT_REQUEST_NEWS_CHEDULE);
+	}
+
+	public void reConnect(){
+		try {
+			Log.d(TAG, "reConnect: ");
+			OkHttpClient client = new OkHttpClient();
+			Request request = new Request.Builder().url(socketURl).build();
+			ws = client.newWebSocket(request, new EchoWebSocketListener());
+			client.dispatcher().executorService().shutdown();
+			ws.send(SCK_EVT_REQUEST_NEWS_CHEDULE);
+		} catch (Exception ex){}
 	}
 
     private Emitter.Listener onGetMess = new Emitter.Listener() {

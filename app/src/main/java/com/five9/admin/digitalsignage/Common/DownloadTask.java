@@ -1,15 +1,18 @@
 package com.five9.admin.digitalsignage.Common;
 
 import android.os.AsyncTask;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.five9.admin.digitalsignage.Object.Schedule;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.URL;
-import java.net.URLConnection;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -66,7 +69,9 @@ public class DownloadTask  extends AsyncTask<Void, Void, Boolean> {
             outStream.close();
             inStream.close();
             response.body().close();
-            return true;
+            if (TextUtils.isEmpty(request.schedule.md5cksum)
+		            || request.schedule.md5cksum.equalsIgnoreCase(checksum(file.getPath())))
+	        	return true;
         } catch (Exception e) {
             Log.d(TAG, "download: " + e.getMessage());
             try {
@@ -92,4 +97,25 @@ public class DownloadTask  extends AsyncTask<Void, Void, Boolean> {
         LoaderController.getInstance().onLoadRequestCancel(request);
 
     }
+
+	private static String checksum(String filepath){
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			try (DigestInputStream dis = new DigestInputStream(new FileInputStream(filepath), md)) {
+
+				byte[] buff = new byte[1024];
+				while ((dis.read(buff,0, 1024)) != -1)
+				{
+					md = dis.getMessageDigest();
+				}
+			}
+			// bytes to hex
+			StringBuilder result = new StringBuilder();
+			for (byte b : md.digest()) {
+				result.append(String.format("%02x", b));
+			}
+			return result.toString();
+		} catch (Exception e){}
+		return "";
+	}
 }
