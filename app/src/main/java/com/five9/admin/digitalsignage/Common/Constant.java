@@ -3,7 +3,7 @@ package com.five9.admin.digitalsignage.Common;
 public class Constant {
     public final static String ROOT_FOLDER = "/FIVE9/digitalSignage/";
 
-    public final static String API_V1 = "api/v1/";
+    public final static String API_V1 = "/api/v1/";
 
     public final static String LOGIN_METHOD = "rest-auth/login/";
     public final static String DEVICE = "device/";

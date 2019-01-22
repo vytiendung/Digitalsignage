@@ -151,7 +151,7 @@ public class ApiConnection {
 
     private static void onGetInfoSuccess(String res) {
 	    SocketController.getInstance().startConnect(res);
-        ListSchedulesManager.getInstance().initData();
+//        ListSchedulesManager.getInstance().initData();
     }
 
     private static void login(final RequestNetworkListener listener){

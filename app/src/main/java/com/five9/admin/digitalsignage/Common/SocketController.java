@@ -29,10 +29,13 @@ public class SocketController {
 
 		@Override
 		public void onOpen(WebSocket webSocket, Response response) {
+			output("onOpen : " + response.message());
+
 		}
 
 		@Override
 		public void onMessage(WebSocket webSocket, String text) {
+			output("onMessage : " + text);
 			setOnGetMess(text);
 		}
 
@@ -45,13 +48,7 @@ public class SocketController {
 		public void onClosing(WebSocket webSocket, int code, String reason) {
 			webSocket.close(NORMAL_CLOSURE_STATUS, null);
 			output("Closing : " + code + " / " + reason);
-//			new Handler(Looper.getMainLooper()).post(new Runnable() {
-//				@Override
-//				public void run() {
-//					Toast.makeText(MyApplication.getInstance(),"onClosing", Toast.LENGTH_LONG).show();
-//				}
-//			});
-			new Handler().postDelayed(new Runnable() {
+			new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
 				@Override
 				public void run() {
 					reConnect();
@@ -62,6 +59,12 @@ public class SocketController {
 		@Override
 		public void onFailure(WebSocket webSocket, Throwable t, Response response) {
 			output("Error : " + t.getMessage());
+			new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					reConnect();
+				}
+			}, 5000);
 		}
 	}
 
@@ -99,14 +102,19 @@ public class SocketController {
     private SocketController() {
     }
 
-	public void startConnect(String url){
-		Log.d(TAG, "startConnect: " + url);
-		socketURl = url;
-		OkHttpClient client = new OkHttpClient();
-		Request request = new Request.Builder().url(url).build();
-		ws = client.newWebSocket(request, new EchoWebSocketListener());
-		client.dispatcher().executorService().shutdown();
-		ws.send(SCK_EVT_REQUEST_NEWS_CHEDULE);
+	public void startConnect(final String url){
+		new Handler(Looper.getMainLooper()).post(new Runnable() {
+			@Override
+			public void run() {
+				Log.d(TAG, "startConnect: " + url);
+				socketURl = url;
+				OkHttpClient client = new OkHttpClient();
+				Request request = new Request.Builder().url(url).build();
+				ws = client.newWebSocket(request, new EchoWebSocketListener());
+				client.dispatcher().executorService().shutdown();
+				ws.send(SCK_EVT_REQUEST_NEWS_CHEDULE);
+			}
+		});
 	}
 
 	public void reConnect(){

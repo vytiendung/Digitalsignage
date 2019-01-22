@@ -60,31 +60,26 @@ public class ListSchedulesManager {
 		    Log.d(TAG, "updateListSchedule1: ");
 		    currentSchedules = nextSchedules;
 		    nextSchedules = null;
-		    if (!TextUtils.isEmpty(currentSchedules.version)){
-			    dataStorage.saveListSchedules(currentSchedules.toJsonString());
-			    loadSchedulesIfNeed(currentSchedules);
-		    }
+		    dataStorage.saveListSchedules(currentSchedules.toJsonString());
+		    loadSchedulesIfNeed(currentSchedules);
 	    } else {
-		    if (!currentSchedules.version.equals(nextSchedules.version)) {
+		    if (!currentSchedules.version.equals(nextSchedules.version) || true) {
 			    Log.d(TAG, "updateListSchedule2: ");
-			    if (!TextUtils.isEmpty(nextSchedules.version)){
-				    Log.d(TAG, "updateListSchedule3: ");
-				    for (int i = 0; i < currentSchedules.schedules.size(); i++){
-					    Schedule current = currentSchedules.schedules.get(i);
-					    for (int j = 0; j < nextSchedules.schedules.size(); j++){
-						    Schedule next = nextSchedules.schedules.get(j);
-						    if (current.id == next.id){
-							    current.endtime = next.endtime;
-							    current.starttime = next.starttime;
-							    if (current.isFetched())
-								    next.downloaded = true;
-						    }
+			    for (int i = 0; i < currentSchedules.schedules.size(); i++){
+				    Schedule current = currentSchedules.schedules.get(i);
+				    for (int j = 0; j < nextSchedules.schedules.size(); j++){
+					    Schedule next = nextSchedules.schedules.get(j);
+					    if (current.id == next.id){
+						    current.endtime = next.endtime;
+						    current.starttime = next.starttime;
+						    if (current.isFetched())
+							    next.downloaded = true;
 					    }
 				    }
-				    dataStorage.saveListSchedules(nextSchedules.toJsonString());
-				    loadSchedulesIfNeed(nextSchedules);
-				    startThreadCheckUpdate();
 			    }
+			    dataStorage.saveListSchedules(nextSchedules.toJsonString());
+			    loadSchedulesIfNeed(nextSchedules);
+			    startThreadCheckUpdate();
 		    }
 	    }
 	    if (checkReloadVideoIfNeed == null)
